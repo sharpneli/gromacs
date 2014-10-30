@@ -39,7 +39,11 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
+#include "gmxpre.h"
+
 #include "path.h"
+
+#include "config.h"
 
 #include <cctype>
 #include <cerrno>
@@ -48,9 +52,8 @@
 
 #include <algorithm>
 
-#include "config.h"
-
 #include <sys/stat.h>
+
 #ifdef GMX_NATIVE_WINDOWS
 #include <direct.h>
 #else
@@ -163,6 +166,11 @@ std::string Path::getFilename(const std::string &path)
         return path;
     }
     return path.substr(pos+1);
+}
+
+bool Path::hasExtension(const std::string &path)
+{
+    return getFilename(path).find('.') != std::string::npos;
 }
 
 std::string Path::stripExtension(const std::string &path)

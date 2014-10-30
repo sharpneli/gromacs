@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
+#include "gmxpre.h"
+
 #include "testoptions.h"
 
 #include <cstdio>
@@ -56,15 +58,15 @@
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/programcontext.h"
 
-#include "refdata.h"
-#include "testfilemanager.h"
-#include "mpi-printer.h"
+#include "testutils/mpi-printer.h"
+#include "testutils/refdata.h"
+#include "testutils/testfilemanager.h"
 
 namespace gmx
 {
@@ -187,7 +189,7 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
     catch (const std::exception &ex)
     {
         printFatalErrorMessage(stderr, ex);
-        std::exit(processExceptionAtExit(ex));
+        std::exit(processExceptionAtExitForCommandLine(ex));
     }
 }
 

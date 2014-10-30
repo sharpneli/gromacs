@@ -34,11 +34,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/topology/atomprop.h"
+#include "gmxpre.h"
 
-#include "config.h"
+#include "atomprop.h"
 
 #include <ctype.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "gromacs/fileio/strdb.h"

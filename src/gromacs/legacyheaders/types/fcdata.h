@@ -41,6 +41,10 @@
 extern "C" {
 #endif
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
 typedef real rvec5[5];
 
 /* Distance restraining stuff */

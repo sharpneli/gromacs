@@ -39,17 +39,20 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
-#include "gromacs/commandline/cmdlineinit.h"
+#include "gmxpre.h"
+
+#include "cmdlineinit.h"
+
+#include "config.h"
 
 #include <cstring>
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/types/commrec.h"
-
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/init.h"
@@ -135,6 +138,13 @@ void finalizeForCommandLine()
     gmx::finalize();
     setProgramContext(NULL);
     g_commandLineContext.reset();
+}
+
+int processExceptionAtExitForCommandLine(const std::exception &ex)
+{
+    int rc = processExceptionAtExit(ex); //Currently this aborts for GMX_LIB_MPI
+    finalizeForCommandLine();            //thus this MPI_Finalize doesn't matter
+    return rc;
 }
 
 int runCommandLineModule(int argc, char *argv[],

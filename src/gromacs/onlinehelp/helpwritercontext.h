@@ -46,7 +46,7 @@
 #include <string>
 #include <vector>
 
-#include "../utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {

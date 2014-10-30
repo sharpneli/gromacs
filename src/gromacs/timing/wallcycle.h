@@ -39,9 +39,9 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/commrec_fwd.h"
-#include "../legacyheaders/types/nbnxn_cuda_types_ext.h"
-#include "../utility/basedefinitions.h"
+#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,8 +54,9 @@ enum {
     ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcNS, ewcLAUNCH_GPU_NB,
     ewcMOVEX, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH,
     ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcLJPME, ewcPME_SOLVE,
-    ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcNB_XF_BUF_OPS,
-    ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd, ewcSWAP, ewcIMD,
+    ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcWAIT_GPU_NB_L_EST, ewcNB_XF_BUF_OPS,
+    ewcVSITESPREAD, ewcPULLPOT,
+    ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd, ewcSWAP, ewcIMD,
     ewcTEST, ewcNR
 };
 
@@ -65,7 +66,7 @@ enum {
     ewcsDD_MAKETOP, ewcsDD_MAKECONSTR, ewcsDD_TOPOTHER,
     ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
     ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
-    ewcsBONDED, ewcsNONBONDED, ewcsEWALD_CORRECTION,
+    ewcsLISTED, ewcsNONBONDED, ewcsEWALD_CORRECTION,
     ewcsNB_X_BUF_OPS, ewcsNB_F_BUF_OPS,
     ewcsNR
 };

@@ -34,27 +34,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "readinp.h"
-#include "txtdump.h"
-#include "gstat.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/units.h"
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/matio.h"
-#include "gmx_ana.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 static int index2(int *ibox, int x, int y)
@@ -756,7 +756,7 @@ static void do_sham(const char *fn, const char *ndx,
                     index   = index3(ibox, i, j, k);
                     if (P[index] > 0)
                     {
-                        fprintf(fp, "%-6s%5u  %-4.4s%3.3s  %4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                        fprintf(fp, "%-6s%5d  %-4.4s%3.3s  %4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                                 "ATOM", (index+1) %10000, "H", "H", (index+1)%10000,
                                 xxx[XX], xxx[YY], xxx[ZZ], 1.0, W[index]);
                     }
@@ -988,7 +988,7 @@ int gmx_sham(int argc, char *argv[])
     int     npargs;
 
     npargs = asize(pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm, npargs, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

@@ -48,7 +48,7 @@
 #include <limits.h>
 #include <stdio.h>
 
-#include "basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,7 +57,7 @@ extern "C" {
 }
 #endif
 
-#include "gmx_header_config.h"
+#include "gromacs/utility/gmx_header_config.h"
 /*! \def DIR_SEPARATOR
  * \brief
  * Directory separator on this OS.
@@ -148,6 +148,9 @@ int gmx_fseek(FILE *stream, gmx_off_t offset, int whence);
 
 /** OS-independent 64-bit ftell(). */
 gmx_off_t gmx_ftell(FILE *stream);
+
+/** OS-independent truncate(). */
+int gmx_truncate(const char *filename, gmx_off_t length);
 
 /*! \brief
  * Finds full path for a library file.

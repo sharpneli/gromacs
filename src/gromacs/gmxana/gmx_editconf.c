@@ -34,31 +34,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "config.h"
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/fileio/pdbio.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "macros.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
-#include "gromacs/topology/index.h"
-#include "typedefs.h"
-#include "gromacs/gmxlib/conformation-utilities.h"
-#include "gromacs/math/units.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "princ.h"
-#include "txtdump.h"
-#include "viewit.h"
-#include "gmx_ana.h"
-
-#include "gromacs/commandline/pargs.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/princ.h"
+#include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -341,7 +340,7 @@ void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[])
     for (i = 1; (i < 12); i++)
     {
         fprintf(out,
-                "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+                "%-6s%5d  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                 "ATOM  ", natoms + 1 + i, "CA", "LEG", space, nres + 1, space,
                 (xmin + (i * 0.12)) * 10, ymin * 10, zmin * 10, 1.0, bfac_min
                 + ((i - 1.0) * (bfac_max - bfac_min) / 10));
@@ -793,11 +792,9 @@ int gmx_editconf(int argc, char *argv[])
         gmx_fatal(FARGS, "Output file should be a .pdb file"
                   " when using the -grasp option\n");
     }
-    if ((bMead || bGrasp) && !((fn2ftp(infile) == efTPR) ||
-                               (fn2ftp(infile) == efTPA) ||
-                               (fn2ftp(infile) == efTPB)))
+    if ((bMead || bGrasp) && (fn2ftp(infile) != efTPR))
     {
-        gmx_fatal(FARGS, "Input file should be a .tp[abr] file"
+        gmx_fatal(FARGS, "Input file should be a .tpr file"
                   " when using the -mead option\n");
     }
 

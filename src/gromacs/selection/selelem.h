@@ -53,10 +53,10 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/utility/common.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
-#include "indexutil.h"
 #include "selvalue.h"
 
 struct gmx_ana_poscalc_t;

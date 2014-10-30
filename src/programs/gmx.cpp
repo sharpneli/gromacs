@@ -37,8 +37,10 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
-#include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gmxpre.h"
+
 #include "gromacs/commandline/cmdlineinit.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
@@ -62,6 +64,6 @@ main(int argc, char *argv[])
     catch (const std::exception &ex)
     {
         gmx::printFatalErrorMessage(stderr, ex);
-        return gmx::processExceptionAtExit(ex);
+        return gmx::processExceptionAtExitForCommandLine(ex);
     }
 }

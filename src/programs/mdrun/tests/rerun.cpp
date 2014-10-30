@@ -40,10 +40,17 @@
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_mdrun
  */
+#include "gmxpre.h"
+
+#include "config.h"
+
 #include <gtest/gtest.h>
-#include "moduletest.h"
+
 #include "gromacs/options/filenameoption.h"
+
 #include "testutils/cmdlinetest.h"
+
+#include "moduletest.h"
 
 namespace
 {
@@ -57,16 +64,16 @@ class MdrunRerun : public gmx::test::MdrunTestFixture,
 /* Among other things, this test ensures mdrun can read a trajectory. */
 TEST_P(MdrunRerun, WithDifferentInputFormats)
 {
-    useEmptyMdpFile();
-    useTopGroAndNdxFromDatabase("spc2");
-    EXPECT_EQ(0, callGrompp());
+    runner_.useEmptyMdpFile();
+    runner_.useTopGroAndNdxFromDatabase("spc2");
+    EXPECT_EQ(0, runner_.callGrompp());
 
     std::string rerunFileName = fileManager_.getInputFilePath(GetParam());
 
     ::gmx::test::CommandLine rerunCaller;
     rerunCaller.append("mdrun");
     rerunCaller.addOption("-rerun", rerunFileName);
-    ASSERT_EQ(0, callMdrun(rerunCaller));
+    ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
 }
 
 /*! \brief Helper array of input files present in the source repo
@@ -75,7 +82,7 @@ TEST_P(MdrunRerun, WithDifferentInputFormats)
  * version. */
 const char *trajectoryFileNames[] = {
     "../../../gromacs/gmxana/legacytests/spc2-traj.trr",
-#ifdef GMX_USE_TNG
+#if defined GMX_USE_TNG && defined HAVE_ZLIB
     "../../../gromacs/gmxana/legacytests/spc2-traj.tng",
 #endif
     "../../../gromacs/gmxana/legacytests/spc2-traj.xtc",

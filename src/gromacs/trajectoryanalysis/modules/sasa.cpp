@@ -41,13 +41,13 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com> (C++ conversion)
  * \ingroup module_trajectoryanalysis
  */
+#include "gmxpre.h"
+
 #include "sasa.h"
 
 #include <algorithm>
 #include <string>
 #include <vector>
-
-#include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
@@ -55,6 +55,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/trx.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
@@ -70,7 +71,7 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/scoped_ptr_sfree.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -941,7 +942,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         }
         sfree(area);
     }
-    scoped_ptr_sfree dotsGuard(surfacedots);
+    scoped_guard_sfree dotsGuard(surfacedots);
     if (retval != 0)
     {
         GMX_THROW(InternalError("nsc_dclm_pbc failed"));

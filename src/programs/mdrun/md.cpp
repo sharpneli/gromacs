@@ -34,65 +34,88 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "config.h"
 
+#include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 
-#include "typedefs.h"
-#include "gromacs/math/vec.h"
-#include "vcm.h"
-#include "mdebin.h"
-#include "nrnb.h"
-#include "calcmu.h"
-#include "vsite.h"
-#include "update.h"
-#include "ns.h"
-#include "mdrun.h"
-#include "md_support.h"
-#include "md_logging.h"
-#include "network.h"
-#include "names.h"
-#include "force.h"
-#include "disre.h"
-#include "orires.h"
-#include "pme.h"
-#include "mdatoms.h"
-#include "repl_ex.h"
-#include "deform.h"
-#include "qmmm.h"
-#include "domdec.h"
-#include "domdec_network.h"
-#include "coulomb.h"
-#include "constr.h"
-#include "shellfc.h"
-#include "gromacs/gmxpreprocess/compute_io.h"
-#include "checkpoint.h"
-#include "gromacs/topology/mtop_util.h"
-#include "sighandler.h"
-#include "txtdump.h"
-#include "gromacs/utility/cstringutil.h"
-#include "pme_loadbal.h"
-#include "bondf.h"
-#include "membed.h"
-#include "types/nlistheuristics.h"
-#include "types/iteratedconstraints.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
+#include "thread_mpi/threads.h"
 
-#include "gromacs/fileio/confio.h"
+#include "gromacs/ewald/pme-load-balancing.h"
+#include "gromacs/ewald/pme.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/mdoutf.h"
 #include "gromacs/fileio/trajectory_writing.h"
-#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/xtcio.h"
+#include "gromacs/gmxpreprocess/compute_io.h"
 #include "gromacs/imd/imd.h"
+#include "gromacs/legacyheaders/bonded-threading.h"
+#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/legacyheaders/domdec_network.h"
+#include "gromacs/legacyheaders/ebin.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/md_support.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/shellfc.h"
+#include "gromacs/legacyheaders/sighandler.h"
+#include "gromacs/legacyheaders/sim_util.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/vcm.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/constr.h"
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
+#include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/globsig.h"
+#include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/iteratedconstraints.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/membedt.h"
+#include "gromacs/legacyheaders/types/nlistheuristics.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/legacyheaders/types/oenv.h"
+#include "gromacs/legacyheaders/types/shellfc.h"
+#include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/swap/swapcoords.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
-#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "deform.h"
+#include "membed.h"
+#include "repl_ex.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -289,7 +312,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             &(state_global->fep_state), lam0,
             nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
-            force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, Flags);
+            force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, Flags, wcycle);
 
     clear_mat(total_vir);
     clear_mat(pres);
@@ -1075,6 +1098,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (bVV && !bStartingFromCpt && !bRerunMD)
         /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
+            wallcycle_start(wcycle, ewcUPDATE);
             if (ir->eI == eiVV && bInitStep)
             {
                 /* if using velocity verlet with full time step Ekin,
@@ -1148,11 +1172,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 if (!bRerunMD || rerun_fr.bV || bForceUpdate)     /* Why is rerun_fr.bV here?  Unclear. */
                 {
+                    wallcycle_stop(wcycle, ewcUPDATE);
                     update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, shake_vir,
                                        cr, nrnb, wcycle, upd, constr,
                                        TRUE, bCalcVir, vetanew);
+                    wallcycle_start(wcycle, ewcUPDATE);
 
                     if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
                     {
@@ -1186,6 +1212,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                    So we need information from the last step in the first half of the integration */
                 if (bGStat || do_per_step(step-1, nstglobalcomm))
                 {
+                    wallcycle_stop(wcycle, ewcUPDATE);
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, state->box,
@@ -1206,6 +1233,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                        time step kinetic energy for the pressure (always true now, since we want accurate statistics).
                        b) If we are using EkinAveEkin for the kinetic energy for the temperature control, we still feed in
                        EkinAveVel because it's needed for the pressure */
+                    wallcycle_start(wcycle, ewcUPDATE);
                 }
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (!bInitStep)
@@ -1219,7 +1247,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     {
                         if (bExchanged)
                         {
-
+                            wallcycle_stop(wcycle, ewcUPDATE);
                             /* We need the kinetic energy at minus the half step for determining
                              * the full step kinetic energy and possibly for T-coupling.*/
                             /* This may not be quite working correctly yet . . . . */
@@ -1228,6 +1256,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                             constr, NULL, FALSE, state->box,
                                             top_global, &bSumEkinhOld,
                                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
+                            wallcycle_start(wcycle, ewcUPDATE);
                         }
                     }
                 }
@@ -1257,6 +1286,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 copy_rvecn(cbuf, state->v, 0, state->natoms);
             }
+            wallcycle_stop(wcycle, ewcUPDATE);
         }
 
         /* MRS -- now done iterating -- compute the conserved quantity */
@@ -1299,7 +1329,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, top_global, fr,
                                  outf, mdebin, ekind, f, f_global,
-                                 wcycle, &nchkpt,
+                                 &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
                                  bSumEkinhOld);
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
@@ -1565,10 +1595,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        state->veta);
                 }
 
-                if (fr->bSepDVDL && fplog && do_log)
-                {
-                    gmx_print_sepdvdl(fplog, "Constraint dV/dl", 0.0, dvdl_constr);
-                }
                 if (bVV)
                 {
                     /* this factor or 2 correction is necessary
@@ -1876,6 +1902,21 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     }
                     dd_bcast(cr->dd, sizeof(gmx_bool), &bPMETuneRunning);
 
+                    if (bPMETuneRunning &&
+                        use_GPU(fr->nbv) && DOMAINDECOMP(cr) &&
+                        !(cr->duty & DUTY_PME))
+                    {
+                        /* Lock DLB=auto to off (does nothing when DLB=yes/no).
+                         * With GPUs + separate PME ranks, we don't want DLB.
+                         * This could happen when we scan coarse grids and
+                         * it would then never be turned off again.
+                         * This would hurt performance at the final, optimal
+                         * grid spacing, where DLB almost never helps.
+                         * Also, DLB can limit the cut-off for PME tuning.
+                         */
+                        dd_dlb_set_lock(cr->dd, TRUE);
+                    }
+
                     if (bPMETuneRunning || step_rel > ir->nstlist*50)
                     {
                         bPMETuneTry     = FALSE;
@@ -1906,6 +1947,16 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     {
                         calc_enervirdiff(NULL, ir->eDispCorr, fr);
                     }
+
+                    if (!bPMETuneRunning &&
+                        DOMAINDECOMP(cr) &&
+                        dd_dlb_is_locked(cr->dd))
+                    {
+                        /* Unlock the DLB=auto, DLB is allowed to activate
+                         * (but we don't expect it to activate in most cases).
+                         */
+                        dd_dlb_set_lock(cr->dd, FALSE);
+                    }
                 }
                 cycles_pmes = 0;
             }
@@ -1935,6 +1986,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
     /* End of main MD loop */
     debug_gmx();
+
+    /* Closing TNG files can include compressing data. Therefore it is good to do that
+     * before stopping the time measurements. */
+    mdoutf_tng_close(outf);
 
     /* Stop measuring walltime */
     walltime_accounting_end(walltime_accounting);

@@ -33,32 +33,35 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
+#include "nbnxn_search.h"
+
 #include "config.h"
 
+#include <assert.h>
 #include <math.h>
 #include <string.h>
-#include <assert.h>
 
-#include "types/commrec.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "nbnxn_consts.h"
-/* nbnxn_internal.h included gromacs/simd/macros.h */
-#include "nbnxn_internal.h"
-#ifdef GMX_NBNXN_SIMD
-#include "gromacs/simd/vector_operations.h"
-#endif
-#include "nbnxn_atomdata.h"
-#include "nbnxn_search.h"
-#include "gmx_omp_nthreads.h"
-#include "nrnb.h"
-#include "ns.h"
-
-#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_atomdata.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/smalloc.h"
+
+/* nbnxn_internal.h included gromacs/simd/macros.h */
+#include "gromacs/mdlib/nbnxn_internal.h"
+#ifdef GMX_SIMD
+#include "gromacs/simd/vector_operations.h"
+#endif
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
 /* Always use 4-wide SIMD for bounding box calculations */
@@ -1928,6 +1931,7 @@ void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
     float        *bbcz;
     nbnxn_bb_t   *bb;
     int           ncd, sc;
+    int           nthreads gmx_unused;
 
     grid = &nbs->grid[0];
 
@@ -1954,7 +1958,8 @@ void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
     bbcz = grid->bbcz_simple;
     bb   = grid->bb_simple;
 
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
+    nthreads = gmx_omp_nthreads_get(emntPairsearch);
+#pragma omp parallel for num_threads(nthreads) schedule(static)
     for (sc = 0; sc < grid->nc; sc++)
     {
         int c, tx, na;
@@ -2939,10 +2944,10 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
 }
 
 #ifdef GMX_NBNXN_SIMD_4XN
-#include "nbnxn_search_simd_4xn.h"
+#include "gromacs/mdlib/nbnxn_search_simd_4xn.h"
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
-#include "nbnxn_search_simd_2xnn.h"
+#include "gromacs/mdlib/nbnxn_search_simd_2xnn.h"
 #endif
 
 /* Plain C or SIMD4 code for making a pair list of super-cell sci vs scj.
@@ -4470,6 +4475,7 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
 {
     int nsci, ncj4, nexcl;
     int n, i;
+    int nthreads gmx_unused;
 
     if (nblc->bSimple)
     {
@@ -4510,7 +4516,8 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
     /* Each thread should copy its own data to the combined arrays,
      * as otherwise data will go back and forth between different caches.
      */
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
+    nthreads = gmx_omp_nthreads_get(emntPairsearch);
+#pragma omp parallel for num_threads(nthreads) schedule(static)
     for (n = 0; n < nnbl; n++)
     {
         int                     sci_offset;
